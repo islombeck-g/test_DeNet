@@ -3,7 +3,7 @@ import SwiftUI
 @main
 struct test_DeNetApp: App {
     
-    @StateObject var viewMode = ViewModel()
+    @StateObject var viewModel = ViewModel()
     
     var body: some Scene {
         
@@ -11,9 +11,8 @@ struct test_DeNetApp: App {
         
         WindowGroup {
             NavigationView {
-                NodeView()     
+                NodeView(selectedNode: viewModel.selectedNode)
             }
-            .environmentObject(viewMode)
         }
     }
 }

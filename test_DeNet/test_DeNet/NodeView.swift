@@ -1,17 +1,20 @@
 import SwiftUI
-//import Combine
 
 struct NodeView: View {
     
-    @EnvironmentObject var viewModel: ViewModel
+    @ObservedObject var viewModel: ViewModel
+    
+    init(selectedNode: Node? = nil) {
+            _viewModel = ObservedObject(wrappedValue: ViewModel(selectedNode: selectedNode))
+        }
     
     var body: some View {
         VStack {
             List {
-                ForEach(self.viewModel.nodes.freeze()) { item in
+                ForEach(self.viewModel.nodes) { item in
                     
                     NavigationLink {
-                        NodeView()
+                        NodeView(selectedNode: item)
                     } label: {
                         Text(item.name)
                     }
@@ -29,6 +32,7 @@ struct NodeView: View {
                 }
             }
         }
+       
     }
 }
 
