@@ -22,6 +22,7 @@ struct NodeView: View {
                 .onDelete { indexSet in
                     self.viewModel.deleteNode(at: indexSet)
                 }
+                
             }
             .navigationTitle(self.viewModel.selectedNode?.name ?? "Root")
             .toolbar {

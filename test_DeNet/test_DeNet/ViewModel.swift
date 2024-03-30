@@ -31,8 +31,6 @@ final class ViewModel: ObservableObject {
                     root.name = "Root"
                     self.selectedNode = root
                     self.nodes = root.children
-
-                    // Now that all properties are initialized, we can capture `self` in the closure
                     try? realm?.write {
                         realm?.add(root)
                     }
@@ -52,10 +50,16 @@ final class ViewModel: ObservableObject {
             }
         }
     func deleteNode(at indexSet: IndexSet) {
+        
+        
         if let index = indexSet.first, let realm = nodes[index].realm {
-            try? realm.write({
-                realm.delete(nodes[index])
-            })
+            
+                let root = nodes[index]
+                self.recursiveDelete(node: root, realm: realm)
+//            try? realm.write({
+//                realm.delete(root)
+//            }) 
+
         }
     }
     
@@ -73,6 +77,17 @@ final class ViewModel: ObservableObject {
         }
     }
     
+    private func recursiveDelete(node: Node, realm: Realm) {
+        guard !node.children.isEmpty else {
+            try? realm.write({
+                realm.delete(node)
+            })
+            return
+        }
+        for i in node.children {
+            recursiveDelete(node: i, realm: realm)
+        }
+    }
     private func generateAddress() -> String {
         let bytes = Data(repeating: 0, count: 20)
         var randomBytes = bytes
