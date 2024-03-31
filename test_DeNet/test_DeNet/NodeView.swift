@@ -1,41 +1,41 @@
 import SwiftUI
 
 struct NodeView: View {
-    
     @ObservedObject var viewModel: ViewModel
-    
     init(selectedNode: Node? = nil) {
-            _viewModel = ObservedObject(wrappedValue: ViewModel(selectedNode: selectedNode))
-        }
+        _viewModel = ObservedObject(wrappedValue: ViewModel(selectedNode: selectedNode))
+    }
     
     var body: some View {
         VStack {
             List {
-                ForEach(self.viewModel.nodes) { item in
-                    
-                    NavigationLink {
-                        NodeView(selectedNode: item)
-                    } label: {
-                        Text(item.name)
+                if let res = self.viewModel.nodes {
+                    ForEach(res) { item in
+                        
+                        NavigationLink {
+                            NodeView(selectedNode: item)
+                        } label: {
+                            Text(item.name)
+                        }
                     }
-                }
-                .onDelete { indexSet in
-                    self.viewModel.deleteNode(at: indexSet)
+                    .onDelete { indexSet in
+                        self.viewModel.deleteNode(at: indexSet)
+                    }
                 }
                 
             }
-            .navigationTitle(self.viewModel.selectedNode?.name ?? "Root")
-            .toolbar {
-                Button {
-                    self.viewModel.addChild()
-                } label: {
-                    Image(systemName: "plus")
-                }
+        }
+        .navigationTitle(self.viewModel.selectedNode?.name ?? "Root")
+        .toolbar {
+            Button {
+                self.viewModel.addChild()
+            } label: {
+                Image(systemName: "plus")
             }
         }
-       
     }
 }
+
 
 
 //struct NodeView: View {
@@ -66,4 +66,25 @@ struct NodeView: View {
 //            node.removeChild(node: node.children[index])
 //        }
 //    }
+//}
+
+//
+//var hoges: Results<Hoge>?
+//@Published var freezedHoges: Results<Hoge>?
+//
+//let realm = try! Realm()
+//  
+//init() {
+//  hoges = realm.objects(Hoge.self)
+//  freezedHoges = hoges?.freeze()
+//}
+//
+//func addHoge() {
+//  let hoge = Hoge()
+//  hoge.id = NSUUID().uuidString
+//  hoge.title = "fuga"
+//  try! realm.write {
+//    realm.add(hoge)
+//  }
+//  freezedHoges = hoges?.freeze()
 //}
