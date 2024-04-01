@@ -1,90 +1,62 @@
 import SwiftUI
 
 struct NodeView: View {
-    @ObservedObject var viewModel: ViewModel
-    init(selectedNode: Node? = nil) {
-        _viewModel = ObservedObject(wrappedValue: ViewModel(selectedNode: selectedNode))
-    }
-    
+    @EnvironmentObject var viewModel: ViewModel1
+    @State private var nextView: Bool = false
+    @State private var backView: Bool = false
     var body: some View {
         VStack {
             List {
-                if let res = self.viewModel.selectedNode?.children {
-                    ForEach(res) { item in
-                        
-                        NavigationLink {
-                            NodeView(selectedNode: item)
-                        } label: {
-                            Text(item.name)
+                ForEach(self.viewModel.nodes) { item in
+                    
+                    Button {
+                        withAnimation {
+                            if self.viewModel.nextPage(item: item.id) {
+                                self.nextView = true
+                            }
                         }
-                    }
-                    .onDelete { indexSet in
-                        self.viewModel.deleteNode(at: indexSet)
+                    } label: {
+                        Text(item.name)
                     }
                 }
-                
+                .onDelete { indexSet in
+                    self.viewModel.deleteNode(indexSet: indexSet)
+                }
             }
         }
-        .navigationTitle(self.viewModel.selectedNode?.name ?? "Root")
+        .navigationDestination(isPresented: $nextView) {
+            NodeView()
+                .transition(.move(edge: .leading))
+                .animation(.linear , value: nextView)
+                
+        }
+        .navigationDestination(isPresented: $backView) {
+            NodeView()
+                .transition(.move(edge: .trailing))
+                
+        }
+        .navigationTitle(self.viewModel.selectedNode!.name)
         .toolbar {
-            Button {
-                self.viewModel.addChild()
-            } label: {
-                Image(systemName: "plus")
+            ToolbarItem(placement: .topBarTrailing) {
+                Button {
+                    withAnimation {
+                        self.viewModel.addChildren()
+                    }
+                    
+                } label: {
+                    Image(systemName: "plus")
+                }
+            }
+            ToolbarItem(placement: .topBarLeading) {
+                
+                Button {
+                    if self.viewModel.navigateBack() {
+                        self.backView = true
+                    }
+                } label: {
+                    Image(systemName: "chevron.left")
+                }
             }
         }
     }
 }
-
-
-
-//struct NodeView: View {
-//
-//    @ObservedObject var node: Node
-//
-//    var body: some View {
-//        List {
-//            ForEach(node.children, id: \.name) { child in
-//                NavigationLink(destination: NodeView(node: child)) {
-//                    Text(child.name)
-//                }
-//            }
-//            .onDelete(perform: delete)
-//        }
-//        .navigationTitle(node.name)
-//        .toolbar {
-//            Button {
-//                self.node.addChild()
-//            } label: {
-//                Image(systemName: "plus")
-//            }
-//        }
-//    }
-//
-//    private func delete(at offsets: IndexSet) {
-//        for index in offsets {
-//            node.removeChild(node: node.children[index])
-//        }
-//    }
-//}
-
-//
-//var hoges: Results<Hoge>?
-//@Published var freezedHoges: Results<Hoge>?
-//
-//let realm = try! Realm()
-//  
-//init() {
-//  hoges = realm.objects(Hoge.self)
-//  freezedHoges = hoges?.freeze()
-//}
-//
-//func addHoge() {
-//  let hoge = Hoge()
-//  hoge.id = NSUUID().uuidString
-//  hoge.title = "fuga"
-//  try! realm.write {
-//    realm.add(hoge)
-//  }
-//  freezedHoges = hoges?.freeze()
-//}

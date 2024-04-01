@@ -2,69 +2,102 @@ import Foundation
 import RealmSwift
 import Combine
 
-final class ViewModel: ObservableObject {
+final class ViewModel1: ObservableObject {
     
-    @Published var selectedNodeId: ObjectId?
-    @Published var selectedNode: Node?
-    
-    private var realm: Realm?
-    
-    init(selectedNode: Node? = nil) {
+    @Published var selectedNode: Node1?
+    @Published var nodes: Array<Node1ForView> = Array<Node1ForView>()
+
+    init() {
         guard let realm = try? Realm() else {
-            fatalError("Unable to instantiate Realm")
+            fatalError("problems with init realm")
         }
-        
-        self.realm = realm
-        
-        if let selectedNode = selectedNode {
-            self.selectedNode = selectedNode
-        } else if let root = realm.objects(Node.self).first {
-            self.selectedNode = root
+        if let root = realm.objects(Node1.self).first {
+           self.selectedNode = root
         } else {
-            let root = Node()
+            let root = Node1()
             root.name = "Root"
             self.selectedNode = root
             try? realm.write {
                 realm.add(root)
             }
         }
+        getNodesByIds()
     }
-    
-    func addChild() {
-        guard let selectedNode = selectedNode else { return }
+
+    func nextPage(item: ObjectId) -> Bool {
+        guard let realm = try? Realm() else { return false }
         
-        let newNode = Node(value: ["_id": ObjectId.generate()])
-        newNode.name = generateAddress()
+        let switchNode = realm.objects(Node1.self).where {
+            $0.id == item
+        }.first
         
-        try? realm?.write {
-            selectedNode.children.append(newNode)
+        self.selectedNode = switchNode!
+        
+        getNodesByIds()
+        return true
+    }
+    func navigateBack() -> Bool {
+        guard let realm = try? Realm() else { return false }
+        guard let parentID = selectedNode?.parentID else {
+            return false
         }
-        objectWillChange.send()
-        self.selectedNode = nil
-        self.selectedNode = selectedNode
+        
+        let switchNode = realm.objects(Node1.self).where {
+            $0.id == parentID
+        }.first
+        
+        self.selectedNode = switchNode!
+        
+        getNodesByIds()
+        return true
     }
     
-    func deleteNode(at indexSet: IndexSet) {
-        if let index = indexSet.first, let realm = selectedNode?.children[index].realm {
-            print(index)
-            let root = selectedNode?.children[index]
-            self.recursiveDelete(node: root!, realm: realm)
+    func deleteNode(indexSet: IndexSet) {
+        guard let realm = try? Realm() else { return }
+        guard let index = indexSet.first else { return }
+
+        let id = self.nodes[index].id
+        
+        try? realm.write({
+            selectedNode?.childIDs.remove(at: index)
+        })
+        if let nodeToDelete = realm.object(ofType: Node1.self, forPrimaryKey: id) {
+            self.recursiveDelete(node: nodeToDelete, realm: realm)
         }
+        
+        self.nodes.remove(at: index)
     }
     
-    private func recursiveDelete(node: Node, realm: Realm) {
-        guard !node.children.isEmpty else {
+    private func recursiveDelete(node: Node1, realm: Realm) {
+        guard !node.childIDs.isEmpty else {
             try? realm.write({
                 realm.delete(node)
             })
             return
         }
-        for i in node.children {
-            recursiveDelete(node: i, realm: realm)
+        for i in node.childIDs {
+            if let nodeToDelete = realm.object(ofType: Node1.self, forPrimaryKey: i) {
+                recursiveDelete(node: nodeToDelete, realm: realm)
+            }
         }
         try? realm.write({
             realm.delete(node)
         })
+    }
+
+    func addChildren() {
+        let newNode = Node1(value: ["_id": ObjectId.generate()])
+        newNode.name = generateAddress()
+        newNode.parentID = selectedNode?.id
+        
+        guard let realm = try? Realm() else { return }
+        
+        try? realm.write {
+            realm.add(newNode)
+            selectedNode?.childIDs.append(newNode.id)
+        
+        }
+        getNodesByIds()
     }
     
     private func generateAddress() -> String {
@@ -82,525 +115,20 @@ final class ViewModel: ObservableObject {
             return "Error generating random bytes"
         }
     }
+    func getNodesByIds() {
+        self.nodes = []
+        guard let me = self.selectedNode?.childIDs else {return}
+        let ids = Array(me)
+        do {
+            let realm = try Realm()
+            let nodes = realm.objects(Node1.self).filter("id IN %@", ids)
+            
+            for i in nodes {
+                let newNode = Node1ForView(id: i.id, name: i.name, childIDs: Array(i.childIDs), parentID: i.parentID)
+                self.nodes.append(newNode)
+            }
+        } catch {
+            print("Ошибка при получении элементов: \(error)")
+        }
+    }
 }
-//    func addChild () {
-//        guard let selectedNode = selectedNode else { return }
-//
-//        let newNode = Node(value: ["_id": ObjectId.generate()])
-//        newNode.name = generateAddress()
-//
-//        try? realm?.write({
-//            selectedNode.children.append(newNode)
-//        })
-//        self.selectedNode?.children = self.selectedNode!.children
-//    }
-
-
-
-//final class ViewModel: ObservableObject {
-//
-//    @Published var nodes: List<Node>?
-//    private var privateNodes: List<Node>?
-//
-//    @Published var selectedNode: Node? {
-//        didSet {
-//            self.nodes = selectedNode?.children
-//            observeChildNodes()
-//        }
-//    }
-//
-//    private var realm: Realm?
-//
-//    init(selectedNode: Node? = nil) {
-//        guard let realm = try? Realm() else {
-//            fatalError("Unable to instantiate Realm")
-//        }
-//        self.realm = realm
-//
-//        if let selectedNode = selectedNode {
-//            self.selectedNode = selectedNode
-//            self.privateNodes = selectedNode.children
-//        } else if let root = realm.objects(Node.self).first {
-//            self.selectedNode = root
-//            self.privateNodes = root.children
-//        } else {
-//            let root = Node()
-//            root.name = "Root"
-//            self.selectedNode = root
-//            self.privateNodes = root.children
-//            try? realm.write {
-//                realm.add(root)
-//            }
-//        }
-//        observeChildNodes()
-//    }
-//
-//    private func observeChildNodes() {
-//        self.privateNodes = selectedNode?.children
-//    }
-//
-//    func deleteNode(at indexSet: IndexSet) {
-//        if let index = indexSet.first, let realm = privateNodes?[index].realm {
-//            let root = privateNodes?[index]
-//            self.recursiveDelete(node: root!, realm: realm)
-//        }
-//    }
-//
-//    func addChild () {
-//        guard let selectedNode = selectedNode else { return }
-//
-//        let newNode = Node()
-//        newNode.name = generateAddress()
-//
-//        try? realm?.write({
-//            selectedNode.children.append(newNode)
-//        })
-//        self.observeChildNodes()
-//    }
-//
-//    private func recursiveDelete(node: Node, realm: Realm) {
-//        guard !node.children.isEmpty else {
-//            try? realm.write({
-//                realm.delete(node)
-//            })
-//            return
-//        }
-//        for i in node.children {
-//            recursiveDelete(node: i, realm: realm)
-//        }
-//    }
-//
-//    private func generateAddress() -> String {
-//        let bytes = Data(repeating: 0, count: 20)
-//        var randomBytes = bytes
-//
-//        let status = randomBytes.withUnsafeMutableBytes { (bytesPointer) -> Int32 in
-//            return SecRandomCopyBytes(kSecRandomDefault, 20, bytesPointer.baseAddress!)
-//        }
-//
-//        if status == errSecSuccess {
-//            let hexString = randomBytes.map { String(format: "%02hhx", $0) }.joined()
-//            return "\(hexString)"
-//        } else {
-//            return "Error generating random bytes"
-//        }
-//    }
-//}
-
-
-
-//final class ViewModel: ObservableObject {
-//
-//    private var cancellables = Set<AnyCancellable>()
-//
-//    @Published var nodes: List<Node>
-//    @Published var selectedNode: Node? {
-//        didSet {
-//            self.nodes = selectedNode?.children ?? List<Node>()
-//            observeChildNodes()
-//        }
-//    }
-//
-//    private var token: NotificationToken?
-//    private var realm: Realm?
-//
-//    init(selectedNode: Node? = nil) {
-//        let realm = try? Realm()
-//        self.realm = realm
-//
-//        if let selectedNode = selectedNode {
-//            self.selectedNode = selectedNode
-//            self.nodes = selectedNode.children
-//        } else if let root = realm?.objects(Node.self).first {
-//            self.selectedNode = root
-//            self.nodes = root.children
-//        } else {
-//            let root = Node()
-//            root.name = "Root"
-//            self.selectedNode = root
-//            self.nodes = root.children
-//            try? realm?.write {
-//                realm?.add(root)
-//            }
-//        }
-//        observeChildNodes()
-//    }
-//
-//    private func observeChildNodes() {
-//        self.nodes = selectedNode?.children ?? List<Node>()
-//    }
-//
-//    func deleteNode(at indexSet: IndexSet) {
-//        if let index = indexSet.first, let realm = nodes[index].realm {
-//            let root = nodes[index]
-//            self.recursiveDelete(node: root, realm: realm)
-//        }
-//    }
-//
-//    func addChild () {
-//
-//        let newNode = Node()
-//        newNode.name = generateAddress()
-//        newNode.parent = self.selectedNode
-//
-//        if let realm = selectedNode?.realm {
-//            try? realm.write({
-//                print("i am here")
-//                selectedNode?.children.append(newNode)
-//            })
-//            self.observeChildNodes()
-//        }
-//    }
-//
-//    private func recursiveDelete(node: Node, realm: Realm) {
-//        guard !node.children.isEmpty else {
-//            try? realm.write({
-//                realm.delete(node)
-//            })
-//            return
-//        }
-//        for i in node.children {
-//            recursiveDelete(node: i, realm: realm)
-//        }
-//    }
-//    private func generateAddress() -> String {
-//        let bytes = Data(repeating: 0, count: 20)
-//        var randomBytes = bytes
-//
-//        let status = randomBytes.withUnsafeMutableBytes { (bytesPointer) -> Int32 in
-//            return SecRandomCopyBytes(kSecRandomDefault, 20, bytesPointer.baseAddress!)
-//        }
-//
-//        if status == errSecSuccess {
-//            let hexString = randomBytes.map { String(format: "%02hhx", $0) }.joined()
-//            return "\(hexString)"
-//        } else {
-//            return "Error generating random bytes"
-//        }
-//    }
-//
-//    deinit {
-//        token?.invalidate()
-//    }
-//}
-
-//final class ViewModel: ObservableObject {
-//
-//    private var nodes = List<Node>()
-//    private var cancellables = Set<AnyCancellable>()
-//    private var realm: Realm?
-//
-//    @Published var publishedNodes = List<Node>()
-//    @Published var selectedNode: Node? {
-//        didSet {
-//            self.updateNodes()
-//        }
-//    }
-//
-//    init(selectedNode: Node? = nil) {
-//        self.realm = try? Realm()
-//
-//        if let selectedNode = selectedNode {
-//            self.selectedNode = selectedNode
-//            self.nodes = selectedNode.children
-//            self.publishedNodes = self.nodes.freeze()
-//        } else if let root = realm?.objects(Node.self).first {
-//            self.selectedNode = root
-//            self.nodes = root.children
-//            self.publishedNodes = self.nodes.freeze()
-//        } else {
-//            let root = Node()
-//            root.name = "Root"
-//            try? realm?.write {
-//                realm?.add(root)
-//            }
-//            self.selectedNode = root
-//        }
-//        self.updateNodes()
-//    }
-//
-//    private func updateNodes() {
-//        self.nodes = selectedNode?.children ?? List<Node>()
-//        self.publishedNodes = self.nodes.freeze()
-//    }
-//
-//    func deleteNode(at indexSet: IndexSet) {
-//
-//        DispatchQueue.main.async { [weak self] in
-//            guard
-//                let self = self,
-//                let index = indexSet.first
-//            else {
-//                return
-//            }
-//
-//            let root = self.nodes[index]
-//            recursiveDelete(node: root)
-//
-//            self.updateNodes()
-//        }
-//    }
-//    private func recursiveDelete(node: Node) {
-//        guard let realm = try? Realm(), let liveNode = realm.object(ofType: Node.self, forPrimaryKey: node.id) else { return }
-//
-//        guard !liveNode.children.isEmpty else {
-//            try? realm.write {
-//                realm.delete(liveNode)
-//            }
-//            return
-//        }
-//
-//        for child in liveNode.children {
-//            recursiveDelete(node: child)
-//        }
-//    }
-////    private func recursiveDelete(node: Node) {
-////        guard !node.children.isEmpty else {
-////            try? realm?.write({
-////                realm?.delete(node)
-////            })
-////            return
-////        }
-////        for i in node.children {
-////            self.recursiveDelete(node: i)
-////        }
-////    }
-//    func addChild() {
-//        // Ensure you're working with a live (unfrozen) Realm instance
-//        guard let realm = try? Realm() else { return }
-//
-//        // If there's a chance the selectedNode is frozen, retrieve a live version using its primary key
-//        guard let selectedNodeId = selectedNode?.id, let liveSelectedNode = realm.object(ofType: Node.self, forPrimaryKey: selectedNodeId) else { return }
-//
-//        let newNode = Node()
-//        newNode.name = generateAddress()
-//        newNode.parent = liveSelectedNode
-//
-//        do {
-//            try realm.write {
-//                liveSelectedNode.children.append(newNode)
-//            }
-//            self.updateNodes()
-//        } catch let error {
-//            print("Failed to add child: \(error.localizedDescription)")
-//        }
-//    }
-////    func addChild () {
-////        let newNode = Node()
-////        newNode.name = generateAddress()
-////        newNode.parent = selectedNode
-////
-////        if let realm = selectedNode?.realm {
-////            try? realm.write({
-////                print("i am here")
-////                selectedNode?.children.append(newNode)
-////            })
-////            self.updateNodes()
-////        }
-////    }
-//
-//    private func generateAddress() -> String {
-//        let bytes = Data(repeating: 0, count: 20)
-//        var randomBytes = bytes
-//
-//        let status = randomBytes.withUnsafeMutableBytes { (bytesPointer) -> Int32 in
-//            return SecRandomCopyBytes(kSecRandomDefault, 20, bytesPointer.baseAddress!)
-//        }
-//
-//        if status == errSecSuccess {
-//            let hexString = randomBytes.map { String(format: "%02hhx", $0) }.joined()
-//            return "\(hexString)"
-//        } else {
-//            return "Error generating random bytes"
-//        }
-//    }
-//    deinit {
-//        cancellables.forEach { $0.cancel() }
-//    }
-//}
-
-
-
-
-
-//MARK: -
-
-//    func deleteNode(at indexSet: IndexSet) {
-//
-//        DispatchQueue.main.async { [weak self] in
-//            guard
-//                let self = self,
-//                let index = indexSet.first,
-//                let realm = self.nodes[index].realm
-//            else {
-//                return
-//            }
-//
-//            let root = self.nodes[index]
-//            self.recursiveDelete(node: root, realm: realm)
-//            print(2)
-//            self.updateNodes()
-//            print(3)
-//        }
-//    }
-
-
-//    private func observeChildNodes() {
-//        token?.invalidate()
-//        token = selectedNode?.children.observe { [weak self] changes in
-//            switch changes {
-//            case .initial, .update:
-//                self?.objectWillChange.send()
-//            case .error(let error):
-//                print("Error: \(error)")
-//            }
-//        }
-//    }
-//final class ViewModel1: ObservableObject {
-//
-//    private var cancellables = Set<AnyCancellable>()
-//
-//    @Published var nodes = List<Node>()
-//    @Published var selectedNode: Node? = nil
-//
-//    var token: NotificationToken? = nil
-//
-//    init(selectedNode: Node? = nil) {
-//        self.selectedNode = selectedNode
-//        self.nodes = selectedNode?.children ?? List<Node>()
-//        let realm = try? Realm()
-//        if let nodes = realm?.objects(Node.self).first {
-//            self.selectedNode = nodes
-//            self.nodes = nodes.children
-//        } else {
-//            try? realm?.write({
-//                let group = Node()
-//                group.name = "Root"
-//                group.parent = nil
-//                realm?.add(group)
-//                self.selectedNode = group
-//            })
-//
-//        }
-//        token = selectedNode?.children.observe({ (changes: RealmCollectionChange<List<Node>>) in
-//            switch changes {
-//            case .error(_):
-//                break
-//            case .initial:
-//                break
-//            case .update(_, deletions: _, insertions: _, modifications: _):
-//                self.objectWillChange.send()
-//            }
-//        })
-//    }
-//
-//
-//
-//    func deleteNode(at indexSet: IndexSet) {
-//        if let index = indexSet.first, let realm = nodes[index].realm {
-//            try? realm.write({
-//                realm.delete(nodes[index])
-//            })
-//        }
-//    }
-//
-//
-//
-//    func addChild () {
-//
-//        let newNode = Node()
-//        newNode.name = generateAddress()
-//        newNode.parent = self.selectedNode
-//
-//        if let realm = selectedNode?.realm {
-//            try? realm.write({
-//                print("i am here")
-//                selectedNode?.children.append(newNode)
-//            })
-//        }
-//    }
-//
-//    private func generateAddress() -> String {
-//        let bytes = Data(repeating: 0, count: 20)
-//        var randomBytes = bytes
-//
-//        let status = randomBytes.withUnsafeMutableBytes { (bytesPointer) -> Int32 in
-//            return SecRandomCopyBytes(kSecRandomDefault, 20, bytesPointer.baseAddress!)
-//        }
-//
-//        if status == errSecSuccess {
-//            let hexString = randomBytes.map { String(format: "%02hhx", $0) }.joined()
-//            return "\(hexString)"
-//        } else {
-//            return "Error generating random bytes"
-//        }
-//    }
-//
-//    deinit {
-//        token?.invalidate()
-//    }
-//}
-
-//    func setupNodesObservation() {
-//
-//        do {
-//            let realm = try Realm()
-//            let results = realm.objects(Node.self)
-//            // Подписка на изменения
-//            notificationToken = results.observe { [weak self] (changes: RealmCollectionChange) in
-//                switch changes {
-//                case .initial(let results), .update(let results, deletions: _, insertions: _, modifications: _):
-//                    self?.nodes = Array(results)
-//                case .error(let error):
-//                    print("Ошибка при отслеживании изменений в Realm: \(error)")
-//                }
-//            }
-//
-//        } catch let error as NSError {
-//            print("Error in get from Realm: \(error)")
-//        }
-//    }
-
-
-
-
-//class Node: ObservableObject {
-//    var name: String
-//    @Published var children: [Node]
-//    weak var parent: Node?
-//
-//    init(name: String, children: [Node] = [], parent: Node? = nil) {
-//        self.name = name
-//        self.children = children
-//        self.parent = parent
-//    }
-//
-//    func addChild() {
-//
-//        let newName = self.generateAddress()
-//        let newNode = Node(name: newName)
-//
-//        children.append(newNode)
-//        newNode.parent = self
-//    }
-//
-//    func removeChild(node: Node) {
-//        children = children.filter { $0 !== node }
-//    }
-//
-//    private func generateAddress() -> String {
-//        let bytes = Data(repeating: 0, count: 20)
-//        var randomBytes = bytes
-//
-//        let status = randomBytes.withUnsafeMutableBytes { (bytesPointer) -> Int32 in
-//            return SecRandomCopyBytes(kSecRandomDefault, 20, bytesPointer.baseAddress!)
-//        }
-//
-//        if status == errSecSuccess {
-//            let hexString = randomBytes.map { String(format: "%02hhx", $0) }.joined()
-//            return "\(hexString)"
-//        } else {
-//            return "Error generating random bytes"
-//        }
-//    }
-//}
