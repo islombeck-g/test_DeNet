@@ -1,17 +1,11 @@
 import Foundation
 import RealmSwift
 import Combine
+
 final class ViewModel: ObservableObject {
     
-    @Published var nodes: List<Node>?
-    private var privateNodes: List<Node>?
-    
-    @Published var selectedNode: Node? {
-        didSet {
-            self.nodes = selectedNode?.children
-            observeChildNodes()
-        }
-    }
+    @Published var selectedNodeId: ObjectId?
+    @Published var selectedNode: Node?
     
     private var realm: Realm?
     
@@ -19,52 +13,45 @@ final class ViewModel: ObservableObject {
         guard let realm = try? Realm() else {
             fatalError("Unable to instantiate Realm")
         }
+        
         self.realm = realm
         
         if let selectedNode = selectedNode {
             self.selectedNode = selectedNode
-            self.privateNodes = selectedNode.children
-            
         } else if let root = realm.objects(Node.self).first {
             self.selectedNode = root
-            self.privateNodes = root.children
-            
         } else {
             let root = Node()
             root.name = "Root"
             self.selectedNode = root
-            self.privateNodes = root.children
             try? realm.write {
                 realm.add(root)
             }
         }
-        observeChildNodes()
     }
     
-    private func observeChildNodes() {
-        self.privateNodes = selectedNode?.children
-        self.nodes = privateNodes
-    }
-    
-    
-    
-    func addChild () {
+    func addChild() {
         guard let selectedNode = selectedNode else { return }
         
         let newNode = Node(value: ["_id": ObjectId.generate()])
         newNode.name = generateAddress()
         
-        try? realm?.write({
+        try? realm?.write {
             selectedNode.children.append(newNode)
-        })
-        self.observeChildNodes()
+        }
+        objectWillChange.send()
+        self.selectedNode = nil
+        self.selectedNode = selectedNode
     }
+    
     func deleteNode(at indexSet: IndexSet) {
-        if let index = indexSet.first, let realm = privateNodes?[index].realm {
-            let root = privateNodes?[index]
+        if let index = indexSet.first, let realm = selectedNode?.children[index].realm {
+            print(index)
+            let root = selectedNode?.children[index]
             self.recursiveDelete(node: root!, realm: realm)
         }
     }
+    
     private func recursiveDelete(node: Node, realm: Realm) {
         guard !node.children.isEmpty else {
             try? realm.write({
@@ -75,8 +62,10 @@ final class ViewModel: ObservableObject {
         for i in node.children {
             recursiveDelete(node: i, realm: realm)
         }
+        try? realm.write({
+            realm.delete(node)
+        })
     }
-    
     
     private func generateAddress() -> String {
         let bytes = Data(repeating: 0, count: 20)
@@ -94,7 +83,17 @@ final class ViewModel: ObservableObject {
         }
     }
 }
-
+//    func addChild () {
+//        guard let selectedNode = selectedNode else { return }
+//
+//        let newNode = Node(value: ["_id": ObjectId.generate()])
+//        newNode.name = generateAddress()
+//
+//        try? realm?.write({
+//            selectedNode.children.append(newNode)
+//        })
+//        self.selectedNode?.children = self.selectedNode!.children
+//    }
 
 
 

@@ -9,7 +9,7 @@ struct NodeView: View {
     var body: some View {
         VStack {
             List {
-                if let res = self.viewModel.nodes {
+                if let res = self.viewModel.selectedNode?.children {
                     ForEach(res) { item in
                         
                         NavigationLink {
