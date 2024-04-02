@@ -15,9 +15,8 @@ final class ViewModel: ObservableObject {
         }
         let selectedNode = realm.object(ofType: Node.self, forPrimaryKey: selectedNodeID)
         self.selectedNode = selectedNode
-        print("safddsfadsfadsfadsf + \(selectedNodeID)")
+        
         readNodes()
-//        updateLast()
     }
 
 //    MARK: - operations CRD
@@ -34,11 +33,9 @@ final class ViewModel: ObservableObject {
         }
         
         self.nodes.append(NodeForView(id: newNode.id, name: newNode.name, childIDs: [], parentID: newNode.parentID))
-//        readNodes()
     }
     func updateLast() { mainViewModel.changeLast(selectedNodeID: self.selectedNode?.id)}
     func readNodes() {
-//        updateLast()
         self.nodes = []
         
         guard let me = self.selectedNode?.childIDs else { return }
