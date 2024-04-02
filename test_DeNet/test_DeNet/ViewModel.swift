@@ -6,24 +6,40 @@ final class ViewModel1: ObservableObject {
     
     @Published var selectedNode: Node1?
     @Published var nodes: Array<Node1ForView> = Array<Node1ForView>()
-
+    
+    private var appState: AppState?
+    
     init() {
         guard let realm = try? Realm() else {
             fatalError("problems with init realm")
         }
-        if let root = realm.objects(Node1.self).first {
-           self.selectedNode = root
+        
+        if let appState = realm.objects(AppState.self).first {
+            self.appState = appState
         } else {
-            let root = Node1()
-            root.name = "Root"
-            self.selectedNode = root
+            self.appState = AppState()
             try? realm.write {
-                realm.add(root)
+                realm.add(self.appState!)
+            }
+        }
+        
+        if let selectedNodeId = appState?.selectedNodeId {
+            self.selectedNode = realm.object(ofType: Node1.self, forPrimaryKey: selectedNodeId)
+        } else {
+            if let root = realm.objects(Node1.self).first {
+                self.selectedNode = root
+            } else {
+                let root = Node1()
+                root.name = "Root"
+                self.selectedNode = root
+                try? realm.write {
+                    realm.add(root)
+                }
             }
         }
         getNodesByIds()
     }
-
+    
     func nextPage(item: ObjectId) -> Bool {
         guard let realm = try? Realm() else { return false }
         
@@ -32,10 +48,10 @@ final class ViewModel1: ObservableObject {
         }.first
         
         self.selectedNode = switchNode!
-        
         getNodesByIds()
         return true
     }
+    
     func navigateBack() -> Bool {
         guard let realm = try? Realm() else { return false }
         guard let parentID = selectedNode?.parentID else {
@@ -55,7 +71,7 @@ final class ViewModel1: ObservableObject {
     func deleteNode(indexSet: IndexSet) {
         guard let realm = try? Realm() else { return }
         guard let index = indexSet.first else { return }
-
+        
         let id = self.nodes[index].id
         
         try? realm.write({
@@ -84,7 +100,7 @@ final class ViewModel1: ObservableObject {
             realm.delete(node)
         })
     }
-
+    
     func addChildren() {
         let newNode = Node1(value: ["_id": ObjectId.generate()])
         newNode.name = generateAddress()
@@ -95,7 +111,6 @@ final class ViewModel1: ObservableObject {
         try? realm.write {
             realm.add(newNode)
             selectedNode?.childIDs.append(newNode.id)
-        
         }
         getNodesByIds()
     }
@@ -116,6 +131,12 @@ final class ViewModel1: ObservableObject {
         }
     }
     func getNodesByIds() {
+        guard let realm = try? Realm() else { return }
+        
+        try? realm.write {
+            appState?.selectedNodeId = selectedNode?.id
+        }
+        
         self.nodes = []
         guard let me = self.selectedNode?.childIDs else {return}
         let ids = Array(me)

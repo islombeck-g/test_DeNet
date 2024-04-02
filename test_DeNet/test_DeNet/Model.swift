@@ -29,3 +29,8 @@ struct Node1ForView: Identifiable {
     var childIDs: Array<ObjectId>
     var parentID: ObjectId?
 }
+
+class AppState: Object {
+    @Persisted(primaryKey: true) var id: ObjectId = ObjectId.generate()
+    @Persisted var selectedNodeId: ObjectId?
+}
