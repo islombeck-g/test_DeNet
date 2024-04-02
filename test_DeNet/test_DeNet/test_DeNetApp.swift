@@ -3,7 +3,7 @@ import SwiftUI
 @main
 struct test_DeNetApp: App {
     
-    @StateObject var viewModel = ViewModel1()
+    var mainViewMode = MainViewModel.shared
     
     var body: some Scene {
         
@@ -11,10 +11,27 @@ struct test_DeNetApp: App {
         
         WindowGroup {
             NavigationView {
-                NodeView()
-                    .transition(.move(edge: .leading))
+                NodeView(selectedNodeID: self.mainViewMode.lastOpenedNode!.id)
             }
-            .environmentObject(self.viewModel)
         }
     }
 }
+
+
+//struct test_DeNetApp: App {
+//    
+//    @StateObject var viewModel = ViewModel()
+//    
+//    var body: some Scene {
+//        
+//        let _ = print(FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!.path)
+//        
+//        WindowGroup {
+//            NavigationView {
+//                NodeView()
+//            }
+//            
+//            .environmentObject(self.viewModel)
+//        }
+//    }
+//}

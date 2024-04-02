@@ -1,22 +1,20 @@
 import SwiftUI
+import RealmSwift
 
 struct NodeView: View {
     
-    @EnvironmentObject var viewModel: ViewModel1
-    @State private var nextView: Bool = false
-    @State private var backView: Bool = false
+    @ObservedObject var viewModel: ViewModel
+    init(selectedNodeID: ObjectId) {
+        _viewModel = ObservedObject(wrappedValue: ViewModel(selectedNodeID: selectedNodeID))
+    }
+//    @Environment(\.dismiss) var dismiss
     
+    var selectedNodeId: ObjectId?
     var body: some View {
         VStack {
             List {
                 ForEach(self.viewModel.nodes) { item in
-                    Button {
-                        withAnimation {
-                            if self.viewModel.nextPage(item: item.id) {
-                                self.nextView = true
-                            }
-                        }
-                    } label: {
+                    NavigationLink(destination: NodeView(selectedNodeID: item.id)) {
                         Text(item.name)
                     }
                 }
@@ -25,13 +23,8 @@ struct NodeView: View {
                 }
             }
         }
-        .navigationDestination(isPresented: $nextView) {
-            NodeView()
-        }
-        .navigationDestination(isPresented: $backView) {
-            NodeView()
-        }
-        .navigationTitle(self.viewModel.selectedNode!.name)
+        .navigationBarBackButtonHidden(true)
+        .navigationTitle(self.viewModel.selectedNode?.name ?? "SomeError")
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
                 Button {
@@ -42,19 +35,70 @@ struct NodeView: View {
                     Image(systemName: "plus")
                 }
             }
-            ToolbarItem(placement: .topBarLeading) {
-                Button {
-                    if self.viewModel.navigateBack() {
-                        self.backView = true
+            if self.viewModel.selectedNode != nil && self.viewModel.selectedNode!.parentID != nil {
+                ToolbarItem(placement: .topBarLeading) {
+                    Button {
+                        self.viewModel.canNavigateBack()
+//                        dismiss()
+                    } label: {
+                        HStack {
+                            Image(systemName: "chevron.left")
+                            Text("Назад")
+                        }
                     }
-                } label: {
-                    HStack {
-                        Image(systemName: "chevron.left")
-                        Text("Назад")
-                    }
-                    
                 }
             }
         }
+//        .onAppear {
+//            self.viewModel.nextPage(item: selectedNodeId)
+//        }
     }
 }
+//struct NodeView: View {
+//    
+//    @EnvironmentObject var viewModel: ViewModel
+//    
+//    var selectedNodeId: ObjectId?
+//    var body: some View {
+//        VStack {
+//            List {
+//                ForEach(self.viewModel.nodes) { item in
+//                    NavigationLink(destination: NodeView(selectedNodeId: item.id)) {
+//                        Text(item.name)
+//                    }
+//                }
+//                .onDelete { indexSet in
+//                    self.viewModel.deleteNode(indexSet: indexSet)
+//                }
+//            }
+//        }
+//        .navigationBarBackButtonHidden(true)
+//        .navigationTitle(self.viewModel.selectedNode?.name ?? "SomeError")
+//        .toolbar {
+//            ToolbarItem(placement: .topBarTrailing) {
+//                Button {
+//                    withAnimation {
+//                        self.viewModel.addChildren()
+//                    }
+//                } label: {
+//                    Image(systemName: "plus")
+//                }
+//            }
+//            if self.viewModel.selectedNode != nil && self.viewModel.selectedNode!.parentID != nil {
+//                ToolbarItem(placement: .topBarLeading) {
+//                    Button {
+//                        self.viewModel.canNavigateBack()
+//                    } label: {
+//                        HStack {
+//                            Image(systemName: "chevron.left")
+//                            Text("Назад")
+//                        }
+//                    }
+//                }
+//            }
+//        }
+//        .onAppear {
+//            self.viewModel.nextPage(item: selectedNodeId)
+//        }
+//    }
+//}
