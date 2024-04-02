@@ -6,7 +6,6 @@ struct NodeView: View {
     @ObservedObject var viewModel: ViewModel
     init(selectedNodeID: ObjectId) {
         _viewModel = ObservedObject(wrappedValue: ViewModel(selectedNodeID: selectedNodeID))
-        print("-------\(selectedNodeID)")
     }
     
     var body: some View {

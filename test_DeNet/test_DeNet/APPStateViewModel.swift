@@ -9,9 +9,8 @@ final class APPStateViewModel: ObservableObject {
     var lastOpenedNode: Node?
     
     init() {
-        print("sdafdsfads")
         guard let realm = try? Realm() else {
-            fatalError("problems with init realm")
+            fatalError("problems with init realm, переустановите приложение(нужно удалить полностью)")
         }
         
         if let appState = realm.objects(AppState.self).first {
@@ -41,14 +40,9 @@ final class APPStateViewModel: ObservableObject {
     }
     
     func changeLast(selectedNodeID: ObjectId?) {
-        print(selectedNodeID)
-        print(self.appState.selectedNodeId)
-        
         guard let realm = appState.realm else { return }
         try? realm.write({
             appState.selectedNodeId = selectedNodeID
         })
-        print("------")
-        print(self.appState.selectedNodeId)
     }
 }
