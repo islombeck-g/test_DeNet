@@ -1,14 +1,15 @@
 import Foundation
 import RealmSwift
 
-final class MainViewModel: ObservableObject {
+final class APPStateViewModel: ObservableObject {
     
-    static var shared = MainViewModel()
+    static var shared = APPStateViewModel()
     
     var appState: AppState
-    var lastOpenedNode: Node1?
+    var lastOpenedNode: Node?
     
     init() {
+        print("sdafdsfads")
         guard let realm = try? Realm() else {
             fatalError("problems with init realm")
         }
@@ -23,13 +24,13 @@ final class MainViewModel: ObservableObject {
         }
         
         if appState.selectedNodeId != nil {
-            let lastOpenedNode = realm.object(ofType: Node1.self, forPrimaryKey: appState.selectedNodeId )
+            let lastOpenedNode = realm.object(ofType: Node.self, forPrimaryKey: appState.selectedNodeId )
             self.lastOpenedNode = lastOpenedNode
         } else {
-            if let root = realm.objects(Node1.self).first {
+            if let root = realm.objects(Node.self).first {
                 self.lastOpenedNode = root
             } else {
-                let root = Node1()
+                let root = Node()
                 root.name = "Root"
                 self.lastOpenedNode = root
                 try? realm.write {
@@ -39,11 +40,15 @@ final class MainViewModel: ObservableObject {
         }
     }
     
-    
     func changeLast(selectedNodeID: ObjectId?) {
+        print(selectedNodeID)
+        print(self.appState.selectedNodeId)
+        
         guard let realm = appState.realm else { return }
         try? realm.write({
             appState.selectedNodeId = selectedNodeID
         })
+        print("------")
+        print(self.appState.selectedNodeId)
     }
 }

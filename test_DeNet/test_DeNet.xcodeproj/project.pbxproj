@@ -15,7 +15,7 @@
 		638A6DB22BB5DC6B003D9331 /* RealmSwift in Frameworks */ = {isa = PBXBuildFile; productRef = 638A6DB12BB5DC6B003D9331 /* RealmSwift */; };
 		638A6DB42BB5EDDB003D9331 /* Model.swift in Sources */ = {isa = PBXBuildFile; fileRef = 638A6DB32BB5EDDB003D9331 /* Model.swift */; };
 		638A6DB62BB5F8E1003D9331 /* NodeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 638A6DB52BB5F8E0003D9331 /* NodeView.swift */; };
-		63B813BD2BBC350D00089439 /* MainViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 63B813BC2BBC350D00089439 /* MainViewModel.swift */; };
+		63B813BD2BBC350D00089439 /* APPStateViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 63B813BC2BBC350D00089439 /* APPStateViewModel.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -26,7 +26,7 @@
 		638A6DAC2BB59A7D003D9331 /* ViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ViewModel.swift; sourceTree = "<group>"; };
 		638A6DB32BB5EDDB003D9331 /* Model.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Model.swift; sourceTree = "<group>"; };
 		638A6DB52BB5F8E0003D9331 /* NodeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NodeView.swift; sourceTree = "<group>"; };
-		63B813BC2BBC350D00089439 /* MainViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainViewModel.swift; sourceTree = "<group>"; };
+		63B813BC2BBC350D00089439 /* APPStateViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APPStateViewModel.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -61,9 +61,9 @@
 		638A6D9D2BB5968C003D9331 /* test_DeNet */ = {
 			isa = PBXGroup;
 			children = (
+				63B813BC2BBC350D00089439 /* APPStateViewModel.swift */,
 				638A6D9E2BB5968C003D9331 /* test_DeNetApp.swift */,
 				638A6DB52BB5F8E0003D9331 /* NodeView.swift */,
-				63B813BC2BBC350D00089439 /* MainViewModel.swift */,
 				638A6DAC2BB59A7D003D9331 /* ViewModel.swift */,
 				638A6DB32BB5EDDB003D9331 /* Model.swift */,
 				638A6DA22BB5968F003D9331 /* Assets.xcassets */,
@@ -157,7 +157,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				63B813BD2BBC350D00089439 /* MainViewModel.swift in Sources */,
+				63B813BD2BBC350D00089439 /* APPStateViewModel.swift in Sources */,
 				638A6DAD2BB59A7D003D9331 /* ViewModel.swift in Sources */,
 				638A6D9F2BB5968C003D9331 /* test_DeNetApp.swift in Sources */,
 				638A6DB42BB5EDDB003D9331 /* Model.swift in Sources */,
