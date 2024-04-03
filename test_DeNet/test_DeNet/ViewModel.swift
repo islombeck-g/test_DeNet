@@ -4,24 +4,26 @@ import Combine
 
 final class ViewModel: ObservableObject {
 
-    @Published var selectedNode: Node?
-    @Published var nodes: Array<NodeForView> = Array<NodeForView>()
+    @Published var selectedNode: NodeRealm?
+    @Published var nodes = Array<Node>()
     
     private var mainViewModel = APPStateViewModel.shared
   
-    init(selectedNodeID: ObjectId) {
+    init() {
         guard let realm = try? Realm() else {
             fatalError("problems with init realm")
         }
-        let selectedNode = realm.object(ofType: Node.self, forPrimaryKey: selectedNodeID)
-        self.selectedNode = selectedNode
+        let id = self.mainViewModel.getLastSelectedNodeID()
+        
+        let firstNode = realm.objects(NodeRealm.self).filter("id IN %@", id).first
+        self.selectedNode = firstNode
         
         readNodes()
     }
 
 //    MARK: - operations CRD
     func createChildren() {
-        let newNode = Node(value: ["_id": ObjectId.generate()])
+        let newNode = NodeRealm(value: ["_id": ObjectId.generate()])
         newNode.name = generateAddress()
         newNode.parentID = selectedNode?.id
         

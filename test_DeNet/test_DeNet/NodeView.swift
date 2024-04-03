@@ -2,16 +2,12 @@ import SwiftUI
 import RealmSwift
 
 struct NodeView: View {
-    
-    @ObservedObject var viewModel: ViewModel
-    init(selectedNodeID: ObjectId) {
-        _viewModel = ObservedObject(wrappedValue: ViewModel(selectedNodeID: selectedNodeID))
-    }
-    
+    @EnvironmentObject var viewMode: ViewModel
+
     var body: some View {
         VStack {
             List {
-                ForEach(self.viewModel.nodes) { item in
+                ForEach(self.treeViewModel.nodes) { item in
                     NavigationLink(destination: NodeView(selectedNodeID: item.id)) {
                         Text(item.name)
                     }
