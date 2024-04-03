@@ -5,7 +5,8 @@ import Combine
 final class ViewModel: ObservableObject {
 
     @Published var selectedNode: NodeRealm?
-    @Published var nodes = Array<Node>()
+//    @Published var nodes = Array<Node>()
+    @Published var node: Array<Node>
     
     private var mainViewModel = APPStateViewModel.shared
   
@@ -18,7 +19,7 @@ final class ViewModel: ObservableObject {
         let firstNode = realm.objects(NodeRealm.self).filter("id IN %@", id).first
         self.selectedNode = firstNode
         
-        readNodes()
+//        readNodes()
     }
 
 //    MARK: - operations CRD
@@ -31,25 +32,29 @@ final class ViewModel: ObservableObject {
 
         try? realm.write {
             realm.add(newNode)
-            selectedNode?.childIDs.append(newNode.id)
+            selectedNode?.children.append(newNode.id)
         }
         
-        self.nodes.append(NodeForView(id: newNode.id, name: newNode.name, childIDs: [], parentID: newNode.parentID))
+        self.node.append(Node(id: newNode.id, name: newNode.name))
     }
-    func updateLast() { mainViewModel.changeLast(selectedNodeID: self.selectedNode?.id)}
+    
+    func updateLast() {
+        mainViewModel.changeLastSelectedNodeID(lastID: self.selectedNode!.id)
+    }
+    
     func readNodes() {
-        self.nodes = []
         
-        guard let me = self.selectedNode?.childIDs else { return }
+        guard let me = self.selectedNode?.children else { return }
         
         let ids = Array(me)
+        
         do {
             let realm = try Realm()
-            let nodes = realm.objects(Node.self).filter("id IN %@", ids)
+            let nodes = realm.objects(NodeRealm.self).filter("id IN %@", ids)
 
             for i in nodes {
-                let newNode = NodeForView(id: i.id, name: i.name, childIDs: Array(i.childIDs), parentID: i.parentID)
-                self.nodes.append(newNode)
+                let newNode = Node(id: i.id, name: i.name)
+                self.node.append(newNode)
             }
         } catch {
             print("Ошибка при получении элементов: \(error)")
@@ -60,26 +65,27 @@ final class ViewModel: ObservableObject {
         guard let realm = try? Realm() else { return }
         guard let index = indexSet.first else { return }
 
-        let id = self.nodes[index].id
+        let id = self.node[index].id
 
         try? realm.write({
-            selectedNode?.childIDs.remove(at: index)
+            selectedNode?.children.remove(at: index)
         })
-        if let nodeToDelete = realm.object(ofType: Node.self, forPrimaryKey: id) {
+        if let nodeToDelete = realm.object(ofType: NodeRealm.self, forPrimaryKey: id) {
             self.recursiveDelete(node: nodeToDelete, realm: realm)
         }
-        self.nodes.remove(at: index)
+       
+        self.node.remove(at: index)
     }
 
-    private func recursiveDelete(node: Node, realm: Realm) {
-        guard !node.childIDs.isEmpty else {
+    private func recursiveDelete(node: NodeRealm, realm: Realm) {
+        guard !node.children.isEmpty else {
             try? realm.write({
                 realm.delete(node)
             })
             return
         }
-        for i in node.childIDs {
-            if let nodeToDelete = realm.object(ofType: Node.self, forPrimaryKey: i) {
+        for i in node.children {
+            if let nodeToDelete = realm.object(ofType: NodeRealm.self, forPrimaryKey: i) {
                 recursiveDelete(node: nodeToDelete, realm: realm)
             }
         }
@@ -104,15 +110,19 @@ final class ViewModel: ObservableObject {
         }
     }
     
-    func canNavigateBack() {
-        guard let realm = try? Realm() else { return }
+//    func canNavigateBack() -> Bool {
+//        if self.selectedNode!.parentID != nil { return true }
+//        return false
+//    }
+    
+    func navigateBack() {
         guard let parentID = selectedNode?.parentID else { return }
-
-        let switchNode = realm.objects(Node.self).where {
-            $0.id == parentID
-        }.first
-
-        self.selectedNode = switchNode!
+        guard let realm = try? Realm() else { return }
+        
+        let switchNode = realm.objects(NodeRealm.self).first {
+            $0 == parentID
+        }
+        self.selectedNode = switchNode
         
         readNodes()
         updateLast()

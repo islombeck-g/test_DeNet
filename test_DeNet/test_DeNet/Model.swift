@@ -13,19 +13,9 @@ class NodeRealm: Object, Identifiable {
 }
 
 struct Node: Identifiable, Hashable {
-    let id = UUID()
+    let id: ObjectId
     let name: String
-    var children: [Node] = []
-    var parentID: UUID?
-    
-    mutating func appendChild(newChild: Node) {
-        self.children.append(newChild)
-    }
-    mutating func removeChild(childID: UUID) {
-        self.children.removeAll { child in
-            child.id == childID
-        }
-    }
+//    var children: Set<ObjectId> = []
 }
 
 //
