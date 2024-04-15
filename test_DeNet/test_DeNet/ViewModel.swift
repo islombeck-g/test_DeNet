@@ -1,27 +1,61 @@
 import Foundation
+import SwiftUI
 import RealmSwift
 import Combine
 
 final class ViewModel: ObservableObject {
 
-    @Published var selectedNode: NodeRealm?
-//    @Published var nodes = Array<Node>()
-    @Published var node: Array<Node>
+    @Published var node: Array<Node> = []
+    @Published var selectedNode: NodeRealm? {
+        didSet {
+            updateNavigationPath()
+        }
+    }
+    @Published var isNext:Bool = false
+    
+    func updateNavigationPath() {
+        if self.isNext {
+            let me = Node(id: self.selectedNode!.id, name: self.selectedNode!.name)
+            self.navigationPath.append(me)
+        } else {
+            if !navigationPath.isEmpty {
+                navigationPath.removeLast()
+            }
+        }
+    }
     
     private var mainViewModel = APPStateViewModel.shared
-  
+    
     init() {
         guard let realm = try? Realm() else {
             fatalError("problems with init realm")
         }
+        
         let id = self.mainViewModel.getLastSelectedNodeID()
-        
-        let firstNode = realm.objects(NodeRealm.self).filter("id IN %@", id).first
+        let firstNode = realm.object(ofType: NodeRealm.self, forPrimaryKey: id)
+
         self.selectedNode = firstNode
+        readNodes()
+    }
+    
+//  MARK: - navigation
+    
+//    @Published var navigationPath: NavigationPath = NavigationPath()
+    @Published var navigationPath = navPath.home
+    func goNext(node: Node) {
         
-//        readNodes()
+        self.isNext = true
+        
+        guard let realm = try? Realm() else { return }
+        guard let newSelectedNode = realm.object(ofType: NodeRealm.self, forPrimaryKey: node.id) else { return }
+        selectedNode = newSelectedNode
     }
 
+    func goBack() {
+        self.isNext = false
+        self.navigateBack()
+    }
+    
 //    MARK: - operations CRD
     func createChildren() {
         let newNode = NodeRealm(value: ["_id": ObjectId.generate()])
@@ -44,14 +78,13 @@ final class ViewModel: ObservableObject {
     
     func readNodes() {
         
+        self.node = []
         guard let me = self.selectedNode?.children else { return }
-        
         let ids = Array(me)
         
         do {
             let realm = try Realm()
             let nodes = realm.objects(NodeRealm.self).filter("id IN %@", ids)
-
             for i in nodes {
                 let newNode = Node(id: i.id, name: i.name)
                 self.node.append(newNode)
@@ -110,18 +143,12 @@ final class ViewModel: ObservableObject {
         }
     }
     
-//    func canNavigateBack() -> Bool {
-//        if self.selectedNode!.parentID != nil { return true }
-//        return false
-//    }
-    
     func navigateBack() {
         guard let parentID = selectedNode?.parentID else { return }
         guard let realm = try? Realm() else { return }
         
-        let switchNode = realm.objects(NodeRealm.self).first {
-            $0 == parentID
-        }
+        let switchNode = realm.object(ofType: NodeRealm.self, forPrimaryKey: parentID)
+        
         self.selectedNode = switchNode
         
         readNodes()

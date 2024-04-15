@@ -2,20 +2,26 @@ import SwiftUI
 import RealmSwift
 
 struct NodeView: View {
-    @EnvironmentObject var viewMode: ViewModel
+    @EnvironmentObject var viewModel: ViewModel
 
     var body: some View {
         VStack {
             List {
-                ForEach(self.treeViewModel.nodes) { item in
-                    NavigationLink(destination: NodeView(selectedNodeID: item.id)) {
+                ForEach(self.viewModel.node) { item in
+                    Button {
+                        self.viewModel.goNext(node: item)
+                    } label: {
                         Text(item.name)
                     }
+                    
                 }
                 .onDelete { indexSet in
                     self.viewModel.deleteNode(indexSet: indexSet)
                 }
             }
+        }
+        .onAppear {
+            print("nodeView_0")
         }
         .navigationBarBackButtonHidden(true)
         .navigationTitle(self.viewModel.selectedNode?.name ?? "SomeError")
@@ -32,7 +38,8 @@ struct NodeView: View {
             if self.viewModel.selectedNode != nil && self.viewModel.selectedNode!.parentID != nil {
                 ToolbarItem(placement: .topBarLeading) {
                     Button {
-                        self.viewModel.canNavigateBack()
+//                        self.viewModel.canNavigateBack()
+                        self.viewModel.goBack()
                     } label: {
                         HStack {
                             Image(systemName: "chevron.left")
@@ -41,9 +48,6 @@ struct NodeView: View {
                     }
                 }
             }
-        }
-        .onAppear {
-            self.viewModel.updateLast()
         }
     }
 }

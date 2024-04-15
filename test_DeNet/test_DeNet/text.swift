@@ -4,19 +4,21 @@ import SwiftUI
 
 
 
-//struct ContentView: View {
-//    
-//    @State private var newNodeTitle = ""
-//    
-//    var body: some View {
-//        NavigationStack {
-//            NodeView(node: treeViewModel.rootNode, treeViewModel: treeViewModel)
-//                .navigationDestination(for: Node.self) { node in
-//                    NodeView(node: node, treeViewModel: treeViewModel)
-//                }
-//        }
-//    }
-//}
+struct ContentView: View {
+    
+    @EnvironmentObject var viewModel: V
+    
+    var body: some View {
+        NavigationStack {
+            
+        }
+    }
+}
+final class V: ObservableObject {
+    
+    @Published var path: NavigationPath = NavigationPath()
+    
+}
 
 //struct NodeView: View {
 //    @State private var newNodeTitle = ""
